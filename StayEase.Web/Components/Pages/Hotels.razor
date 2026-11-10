@@ -1,6 +1,122 @@
+
 @page "/hotels"
 
 <PageTitle>Hotels | StayEase</PageTitle>
-<h1>Explore hotels</h1>
-<p class="muted">The hotel catalogue and date-based availability search will be implemented in the customer module.</p>
-<div class="notice">Customer module — owned by Participant 1.</div>
+
+<section class="hotels-page">
+    <div class="hotels-heading">
+        <p class="eyebrow">DISCOVER YOUR NEXT DESTINATION</p>
+        <h1>Explore Hotels</h1>
+        <p>Find the perfect place to relax, travel and feel at home.</p>
+    </div>
+
+    <div class="hotel-search">
+        <span>Search hotels</span>
+        <input type="text"
+               placeholder="Enter hotel name or city..."
+               @bind="searchText"
+               @bind:event="oninput" />
+    </div>
+
+    <div class="hotel-results">
+        <h2>Available Hotels</h2>
+        <p class="muted">@FilteredHotels.Count() hotels found</p>
+    </div>
+
+    <div class="hotel-grid">
+        @foreach (var hotel in FilteredHotels)
+        {
+            <article class="hotel-card">
+                <img src="@hotel.Image"
+                     alt="@hotel.Name"
+                     class="hotel-image" />
+
+                <div class="hotel-card-content">
+                    <div class="hotel-location">@hotel.City</div>
+                    <h3>@hotel.Name</h3>
+
+                    <div class="hotel-rating">
+                        <span>★</span> @hotel.Rating / 5
+                    </div>
+
+                    <p class="hotel-description">
+                        @hotel.Description
+                    </p>
+
+                    <div class="hotel-card-bottom">
+                        <div class="hotel-price">
+                            <strong>$@hotel.Price</strong>
+                            <span>/ night</span>
+                        </div>
+
+                        <a href="@($"/hotels/{hotel.Id}")"
+                           class="primary-button">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </article>
+        }
+    </div>
+
+    @if (!FilteredHotels.Any())
+    {
+        <div class="notice">
+            No hotels found. Try another hotel name or city.
+        </div>
+    }
+</section>
+
+@code {
+    private string searchText = "";
+
+    private List<HotelCard> hotels = new()
+    {
+        new HotelCard
+        {
+            Id = 1,
+            Name = "Grand Palace Hotel",
+            City = "Astana, Kazakhstan",
+            Rating = 4.9,
+            Price = 120,
+            Description = "Enjoy elegant rooms, modern comfort and excellent service.",
+            Image = "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=900"
+        },
+        new HotelCard
+        {
+            Id = 2,
+            Name = "Mountain View Resort",
+            City = "Almaty, Kazakhstan",
+            Rating = 4.8,
+            Price = 95,
+            Description = "A relaxing destination surrounded by beautiful mountain views.",
+            Image = "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=900"
+        },
+        new HotelCard
+        {
+            Id = 3,
+            Name = "Luxury Garden Hotel",
+            City = "Dubai, UAE",
+            Rating = 4.7,
+            Price = 150,
+            Description = "Experience luxury, comfort and unforgettable hospitality.",
+            Image = "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=900"
+        }
+    };
+
+    private IEnumerable<HotelCard> FilteredHotels =>
+        hotels.Where(h =>
+            h.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+            h.City.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+
+    public class HotelCard
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string City { get; set; } = "";
+        public double Rating { get; set; }
+        public decimal Price { get; set; }
+        public string Description { get; set; } = "";
+        public string Image { get; set; } = "";
+    }
+}

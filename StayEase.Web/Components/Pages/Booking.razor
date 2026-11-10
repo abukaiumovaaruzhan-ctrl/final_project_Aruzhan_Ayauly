@@ -1,0 +1,199 @@
+
+@page "/booking/{hotelId:int}"
+
+<PageTitle>Booking | StayEase</PageTitle>
+
+<section class="booking-page">
+    <div class="booking-heading">
+        <p class="eyebrow">RESERVE YOUR STAY</p>
+        <h1>Book Your Stay</h1>
+        <p>Complete your booking details and enjoy your trip.</p>
+    </div>
+
+    @if (selectedHotel is not null)
+    {
+        <div class="booking-card">
+            <div class="booking-hotel">
+                <img src="@selectedHotel.Image"
+                     alt="@selectedHotel.Name" />
+
+                <div>
+                    <p class="hotel-location">@selectedHotel.City</p>
+                    <h2>@selectedHotel.Name</h2>
+                    <p>★ @selectedHotel.Rating / 5</p>
+                    <strong>$@selectedHotel.Price / night</strong>
+                </div>
+            </div>
+
+            <div class="booking-form">
+                <h2>Your Reservation</h2>
+
+                <div class="booking-fields">
+                    <div>
+                        <label for="checkin">Check-in</label>
+                        <input id="checkin"
+                               type="date"
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                               @bind="checkIn" />
+                    </div>
+
+                    <div>
+                        <label for="checkout">Check-out</label>
+                        <input id="checkout"
+                               type="date"
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                               @bind="checkOut" />
+                    </div>
+
+                    <div>
+                        <label for="guests">Guests</label>
+                        <input id="guests"
+                               type="number"
+                               min="1"
+                               max="5"
+                               @bind="guests" />
+                    </div>
+                </div>
+
+                <div class="booking-summary">
+                    <h3>Price Summary</h3>
+
+                    <p>
+                        Price per night:
+                        <strong>$@selectedHotel.Price</strong>
+                    </p>
+
+                    <p>
+                        Nights:
+                        <strong>@Nights</strong>
+                    </p>
+
+                    <p>
+                        Guests:
+                        <strong>@guests</strong>
+                    </p>
+
+                    <div class="booking-total">
+                        <span>Total price</span>
+                        <strong>$@TotalPrice</strong>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <p class="booking-error">@errorMessage</p>
+                }
+
+                @if (bookingConfirmed)
+                {
+                    <div class="booking-success">
+                        <h3>Booking confirmed!</h3>
+                        <p>Your demo reservation has been completed successfully.</p>
+                    </div>
+                }
+
+                <button class="primary-button booking-button"
+                        @onclick="ConfirmBooking">
+                    Confirm Booking
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="notice">
+            <h2>Hotel not found</h2>
+            <a href="/hotels" class="primary-button">Back to Hotels</a>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public int hotelId { get; set; }
+
+    private DateTime checkIn = DateTime.Today.AddDays(1);
+    private DateTime checkOut = DateTime.Today.AddDays(3);
+    private int guests = 1;
+
+    private bool bookingConfirmed = false;
+    private string errorMessage = "";
+
+    private HotelBookingModel? selectedHotel =>
+        hotels.FirstOrDefault(h => h.Id == hotelId);
+
+    private int Nights =>
+        (checkOut.Date - checkIn.Date).Days;
+
+    private decimal TotalPrice =>
+        selectedHotel is not null && Nights > 0
+            ? selectedHotel.Price * Nights
+            : 0;
+
+    private void ConfirmBooking()
+    {
+        errorMessage = "";
+        bookingConfirmed = false;
+
+        if (checkIn.Date < DateTime.Today)
+        {
+            errorMessage = "Check-in date cannot be in the past.";
+            return;
+        }
+
+        if (checkOut.Date <= checkIn.Date)
+        {
+            errorMessage = "Check-out must be after check-in.";
+            return;
+        }
+
+        if (guests < 1 || guests > 5)
+        {
+            errorMessage = "Please select between 1 and 5 guests.";
+            return;
+        }
+
+        bookingConfirmed = true;
+    }
+
+    private List<HotelBookingModel> hotels = new()
+    {
+        new HotelBookingModel
+        {
+            Id = 1,
+            Name = "Grand Palace Hotel",
+            City = "Astana, Kazakhstan",
+            Rating = 4.9,
+            Price = 120,
+            Image = "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=900"
+        },
+        new HotelBookingModel
+        {
+            Id = 2,
+            Name = "Mountain View Resort",
+            City = "Almaty, Kazakhstan",
+            Rating = 4.8,
+            Price = 95,
+            Image = "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=900"
+        },
+        new HotelBookingModel
+        {
+            Id = 3,
+            Name = "Luxury Garden Hotel",
+            City = "Dubai, UAE",
+            Rating = 4.7,
+            Price = 150,
+            Image = "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=900"
+        }
+    };
+
+    public class HotelBookingModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string City { get; set; } = "";
+        public double Rating { get; set; }
+        public decimal Price { get; set; }
+        public string Image { get; set; } = "";
+    }
+}

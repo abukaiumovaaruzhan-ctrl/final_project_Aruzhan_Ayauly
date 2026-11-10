@@ -1,0 +1,127 @@
+
+@page "/hotels/{id:int}"
+
+<PageTitle>Hotel Details | StayEase</PageTitle>
+
+@if (selectedHotel is not null)
+{
+    <section class="hotel-details-page">
+        <a href="/hotels" class="back-link">← Back to Hotels</a>
+
+        <div class="hotel-details-card">
+            <img src="@selectedHotel.Image"
+                 alt="@selectedHotel.Name"
+                 class="hotel-details-image" />
+
+            <div class="hotel-details-content">
+                <p class="eyebrow">STAYEASE COLLECTION</p>
+
+                <p class="hotel-location">
+                    @selectedHotel.City
+                </p>
+
+                <h1>@selectedHotel.Name</h1>
+
+                <div class="hotel-rating">
+                    <span>★</span>
+                    @selectedHotel.Rating / 5
+                </div>
+
+                <p class="hotel-details-description">
+                    @selectedHotel.Description
+                </p>
+
+                <div class="hotel-details-info">
+                    <div>
+                        <span>Destination</span>
+                        <strong>@selectedHotel.City</strong>
+                    </div>
+
+                    <div>
+                        <span>Guest rating</span>
+                        <strong>@selectedHotel.Rating / 5</strong>
+                    </div>
+
+                    <div>
+                        <span>Price per night</span>
+                        <strong>$@selectedHotel.Price</strong>
+                    </div>
+                </div>
+
+                <div class="hotel-details-bottom">
+                    <div class="hotel-price">
+                        <strong>$@selectedHotel.Price</strong>
+                        <span>/ night</span>
+                    </div>
+
+                    <button class="primary-button" disabled>
+                        Booking Coming Soon
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+else
+{
+    <section class="hotels-page">
+        <div class="notice">
+            <h2>Hotel not found</h2>
+            <p>Sorry, this hotel does not exist.</p>
+            <a href="/hotels" class="primary-button">Back to Hotels</a>
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+
+    private HotelDetailsModel? selectedHotel =>
+        hotels.FirstOrDefault(h => h.Id == id);
+
+    private List<HotelDetailsModel> hotels = new()
+    {
+        new HotelDetailsModel
+        {
+            Id = 1,
+            Name = "Grand Palace Hotel",
+            City = "Astana, Kazakhstan",
+            Rating = 4.9,
+            Price = 120,
+            Description = "Enjoy elegant rooms, modern comfort and excellent service in the heart of Astana. Grand Palace Hotel offers a relaxing stay for business and leisure travellers.",
+            Image = "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200"
+        },
+        new HotelDetailsModel
+        {
+            Id = 2,
+            Name = "Mountain View Resort",
+            City = "Almaty, Kazakhstan",
+            Rating = 4.8,
+            Price = 95,
+            Description = "Discover a relaxing destination surrounded by beautiful mountain views. Enjoy comfortable rooms, peaceful surroundings and a memorable stay in Almaty.",
+            Image = "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=1200"
+        },
+        new HotelDetailsModel
+        {
+            Id = 3,
+            Name = "Luxury Garden Hotel",
+            City = "Dubai, UAE",
+            Rating = 4.7,
+            Price = 150,
+            Description = "Experience luxury, comfort and unforgettable hospitality in Dubai. Relax in stylish rooms and enjoy a beautiful atmosphere during your trip.",
+            Image = "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1200"
+        }
+    };
+
+    public class HotelDetailsModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string City { get; set; } = "";
+        public double Rating { get; set; }
+        public decimal Price { get; set; }
+        public string Description { get; set; } = "";
+        public string Image { get; set; } = "";
+    }
+}
