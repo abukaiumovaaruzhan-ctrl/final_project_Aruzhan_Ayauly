@@ -1,16 +1,83 @@
+
 @page "/"
 
 <PageTitle>StayEase | Home</PageTitle>
 
 <section class="hero">
-    <p class="eyebrow">FIND YOUR NEXT STAY</p>
-    <h1>Feel at home, wherever you go.</h1>
-    <p>Discover comfortable rooms and make your next trip easier with StayEase.</p>
-    <a class="primary-button" href="/hotels">Explore hotels</a>
+    <div class="hero-content">
+        <p class="eyebrow">WELCOME TO STAYEASE</p>
+        <h1>Feel at home,<br /> wherever you go.</h1>
+        <p class="hero-description">
+            Discover comfortable hotels, find your perfect room
+            and enjoy an easy booking experience.
+        </p>
+        <a class="primary-button" href="/hotels">Explore hotels</a>
+    </div>
 </section>
 
-<section class="intro-grid">
-    <article><h2>Find a hotel</h2><p>Explore hotels and compare room options.</p></article>
-    <article><h2>Book with ease</h2><p>Choose your dates and submit a reservation.</p></article>
-    <article><h2>Manage your stay</h2><p>Review your booking details in one place.</p></article>
+<section class="search-section">
+    <div class="section-heading">
+        <p class="eyebrow">PLAN YOUR TRIP</p>
+        <h2>Find your perfect stay</h2>
+    </div>
+
+    <div class="search-box">
+        <div class="search-field">
+            <label for="destination">Destination</label>
+            <input id="destination" type="text"
+                   placeholder="Where are you going?" />
+        </div>
+
+        <div class="search-field">
+            <label for="checkin">Check-in</label>
+            <input id="checkin" type="date" />
+        </div>
+
+        <div class="search-field">
+            <label for="checkout">Check-out</label>
+            <input id="checkout" type="date" />
+        </div>
+
+        <div class="search-field">
+            <label for="guests">Guests</label>
+            <select id="guests">
+                <option value="1">1 Guest</option>
+                <option value="2" selected>2 Guests</option>
+                <option value="3">3 Guests</option>
+                <option value="4">4 Guests</option>
+                <option value="5">5+ Guests</option>
+            </select>
+        </div>
+
+        <a href="/hotels" class="primary-button search-button">
+            Search
+        </a>
+    </div>
+</section>
+
+<section class="intro-section">
+    <div class="section-heading">
+        <p class="eyebrow">WHY STAYEASE?</p>
+        <h2>Everything you need for a comfortable stay</h2>
+    </div>
+
+    <div class="intro-grid">
+        <article class="feature-card">
+            <div class="feature-icon">⌂</div>
+            <h3>Find your hotel</h3>
+            <p>Explore different hotels and compare available rooms.</p>
+        </article>
+
+        <article class="feature-card">
+            <div class="feature-icon">✓</div>
+            <h3>Easy booking</h3>
+            <p>Choose your dates and reserve a room in a few simple steps.</p>
+        </article>
+
+        <article class="feature-card">
+            <div class="feature-icon">♡</div>
+            <h3>Manage your stay</h3>
+            <p>View your reservations and keep your booking details together.</p>
+        </article>
+    </div>
 </section>
