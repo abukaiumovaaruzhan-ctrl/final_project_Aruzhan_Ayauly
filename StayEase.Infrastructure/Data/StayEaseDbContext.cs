@@ -1,3 +1,4 @@
+
 using Microsoft.EntityFrameworkCore;
 using StayEase.Domain.Entities;
 
@@ -39,5 +40,17 @@ public class StayEaseDbContext : DbContext
             .HasOne<Booking>()
             .WithMany()
             .HasForeignKey(p => p.BookingId);
+
+        modelBuilder.Entity<Room>()
+            .Property(r => r.PricePerNight)
+            .HasPrecision(10, 2);
+
+        modelBuilder.Entity<Booking>()
+            .Property(b => b.TotalPrice)
+            .HasPrecision(10, 2);
+
+        modelBuilder.Entity<Payment>()
+            .Property(p => p.Amount)
+            .HasPrecision(10, 2);
     }
 }
