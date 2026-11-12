@@ -8,4 +8,7 @@
     <ProjectReference Include="..\StayEase.Domain\StayEase.Domain.csproj" />
     <ProjectReference Include="..\StayEase.Application\StayEase.Application.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
+  </ItemGroup>
 </Project>

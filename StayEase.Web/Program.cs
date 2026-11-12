@@ -1,6 +1,12 @@
+using StayEase.Infrastructure.Data; 
+using Microsoft.EntityFrameworkCore;  
 using StayEase.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+builder.Services.AddDbContext<StayEaseDbContext>(options =>
+    options.UseSqlite("Data Source=stay_ease.db"));
 
 builder.Services
     .AddRazorComponents()
