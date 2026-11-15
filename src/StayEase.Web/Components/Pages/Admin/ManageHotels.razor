@@ -1,0 +1,69 @@
+@using Microsoft.JSInterop
+@page "/admin/manage-hotels"
+@inject IDbContextFactory<StayEaseDbContext> DbFactory
+@inject IJSRuntime JS
+<PageTitle>Manage hotels — StayEase</PageTitle>
+<p class="eyebrow">ADMINISTRATION</p><h1>Manage hotels</h1>
+<div class="admin-layout">
+    <section class="panel">
+        <h2>@(editingId == 0 ? "Add a hotel" : "Edit hotel")</h2>
+        <EditForm Model="form" OnValidSubmit="SaveHotel">
+            <DataAnnotationsValidator /><ValidationSummary />
+            <label>Hotel name</label><InputText class="field" @bind-Value="form.Name" />
+            <label>Location</label><InputText class="field" @bind-Value="form.Location" />
+            <label>Description</label><InputTextArea class="field" @bind-Value="form.Description" />
+            <label>Rating (0–5)</label><InputNumber class="field" @bind-Value="form.Rating" />
+            <button class="button" type="submit">@(editingId == 0 ? "Create hotel" : "Save changes")</button>
+            @if (editingId != 0) { <button class="button secondary" type="button" @onclick="Reset">Cancel</button> }
+        </EditForm>
+        @if (!string.IsNullOrWhiteSpace(message)) { <p class="success">@message</p> }
+    </section>
+    <section class="panel">
+        <h2>Hotel list</h2>
+        @if (hotels is null) { <p>Loading…</p> }
+        else { @foreach (var h in hotels) {
+            <div class="admin-item"><div><strong>@h.Name</strong><p class="muted">@h.Location · @h.Rooms.Count rooms</p></div>
+                <div class="actions"><button class="small-button" @onclick="() => Edit(h)">Edit</button><button class="small-button danger" @onclick="() => Delete(h.Id)">Delete</button></div>
+            </div>
+        } }
+    </section>
+</div>
+@code {
+    private List<Hotel>? hotels;
+    private int editingId;
+    private string? message;
+    private HotelForm form = new();
+    protected override async Task OnInitializedAsync() => await Load();
+    private async Task Load() {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        hotels = await db.Hotels.AsNoTracking().Include(h => h.Rooms).OrderBy(h => h.Name).ToListAsync();
+    }
+    private void Edit(Hotel h) { editingId = h.Id; form = new() { Name = h.Name, Location = h.Location, Description = h.Description, Rating = h.Rating }; message = null; }
+    private void Reset() { editingId = 0; form = new(); }
+    private async Task SaveHotel() {
+        var hotel = new Hotel { Id = editingId, Name = form.Name.Trim(), Location = form.Location.Trim(), Description = form.Description.Trim(), Rating = form.Rating };
+        try { hotel.Validate(); }
+        catch (Exception ex) { message = ex.Message; return; }
+        await using var db = await DbFactory.CreateDbContextAsync();
+        if (editingId == 0) db.Hotels.Add(hotel);
+        else { db.Hotels.Update(hotel); }
+        await db.SaveChangesAsync();
+        message = editingId == 0 ? "Hotel created." : "Hotel updated.";
+        Reset(); await Load();
+    }
+    private async Task Delete(int id) {
+        if (!await JS.InvokeAsync<bool>("confirm", "Delete this hotel? This is possible only if it has no bookings.")) return;
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var hotel = await db.Hotels.Include(h => h.Rooms).FirstOrDefaultAsync(h => h.Id == id);
+        if (hotel is null) return;
+        var roomIds = hotel.Rooms.Select(r => r.Id).ToList();
+        if (await db.Bookings.AnyAsync(b => roomIds.Contains(b.RoomId))) { message = "Cannot delete a hotel with existing bookings."; return; }
+        db.Hotels.Remove(hotel); await db.SaveChangesAsync(); message = "Hotel deleted."; await Load();
+    }
+    private sealed class HotelForm {
+        [System.ComponentModel.DataAnnotations.Required] public string Name { get; set; } = "";
+        [System.ComponentModel.DataAnnotations.Required] public string Location { get; set; } = "";
+        public string Description { get; set; } = "";
+        [System.ComponentModel.DataAnnotations.Range(0, 5)] public double Rating { get; set; } = 4.5;
+    }
+}

@@ -1,0 +1,10 @@
+<article class="hotel-card">
+    <div class="hotel-art"><span>STAYEASE</span><strong>✦</strong></div>
+    <div class="hotel-content">
+        <div class="rating">★ @Hotel.Rating.ToString("0.0")</div>
+        <h3>@Hotel.Name</h3><p class="muted">⌖ @Hotel.Location</p>
+        <p>@Hotel.Description</p>
+        <div class="card-bottom"><span>@Hotel.Rooms.Count room(s)</span><a href="/hotel/@Hotel.Id">View details →</a></div>
+    </div>
+</article>
+@code { [Parameter, EditorRequired] public Hotel Hotel { get; set; } = default!; }

@@ -1,0 +1,166 @@
+
+@page "/booking/{RoomId:int}"
+@using StayEase.Domain.Entities
+@using BookingEntity = StayEase.Domain.Entities.Booking
+@inject IDbContextFactory<StayEaseDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Book a room — StayEase</PageTitle>
+
+<h1>Complete your booking</h1>
+
+@if (room is null)
+{
+    <p>Room not found.</p>
+}
+else
+{
+    <div class="booking-layout">
+        <section class="panel">
+            <h2>@room.Hotel?.Name</h2>
+            <p class="muted">
+                @room.Type · Room @room.RoomNumber
+            </p>
+
+            <EditForm Model="model" OnValidSubmit="SubmitBooking">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <label>Your full name</label>
+                <InputText @bind-Value="model.CustomerName" class="field" />
+
+                <label>Check-in</label>
+                <InputDate @bind-Value="model.CheckIn" class="field" />
+
+                <label>Check-out</label>
+                <InputDate @bind-Value="model.CheckOut" class="field" />
+
+                @if (!string.IsNullOrWhiteSpace(error))
+                {
+                    <p class="error">@error</p>
+                }
+
+                <button class="button" type="submit">
+                    Confirm booking
+                </button>
+            </EditForm>
+        </section>
+
+        <aside class="panel summary">
+            <p class="eyebrow">YOUR STAY</p>
+
+            <h3>
+                @room.PricePerNight.ToString("N0") ₸
+                <small>/ night</small>
+            </h3>
+
+            @if (model.CheckOut > model.CheckIn)
+            {
+                <p>
+                    @(model.CheckOut.DayNumber - model.CheckIn.DayNumber)
+                    night(s)
+                </p>
+
+                <h2>
+                    @(room.PricePerNight *
+                      (model.CheckOut.DayNumber - model.CheckIn.DayNumber)) ₸
+                </h2>
+            }
+        </aside>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int RoomId { get; set; }
+
+    private Room? room;
+    private string? error;
+
+    private const int DemoCustomerId = 1;
+
+    private BookingInput model = new()
+    {
+        CheckIn = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
+        CheckOut = DateOnly.FromDateTime(DateTime.Today.AddDays(2))
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        room = await db.Rooms
+            .Include(r => r.Hotel)
+            .FirstOrDefaultAsync(r =>
+                r.Id == RoomId && r.IsAvailable);
+    }
+
+    private async Task SubmitBooking()
+    {
+        error = null;
+
+        if (room is null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(model.CustomerName))
+        {
+            error = "Please enter your name.";
+            return;
+        }
+
+        if (model.CheckIn < DateOnly.FromDateTime(DateTime.Today))
+        {
+            error = "Check-in cannot be in the past.";
+            return;
+        }
+
+        if (model.CheckOut <= model.CheckIn)
+        {
+            error = "Check-out must be after check-in.";
+            return;
+        }
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        var overlap = await db.Bookings.AnyAsync(b =>
+            b.RoomId == RoomId &&
+            b.Status != "Cancelled" &&
+            model.CheckIn < b.CheckOut &&
+            model.CheckOut > b.CheckIn);
+
+        if (overlap)
+        {
+            error = "This room is not available for the selected dates.";
+            return;
+        }
+
+        var booking = new BookingEntity
+        {
+            RoomId = RoomId,
+            CustomerId = DemoCustomerId,
+            CustomerName = model.CustomerName.Trim(),
+            CheckIn = model.CheckIn,
+            CheckOut = model.CheckOut,
+            Status = "Pending"
+        };
+
+        booking.TotalPrice =
+            booking.CalculateTotalPrice(room.PricePerNight);
+
+        db.Bookings.Add(booking);
+
+        await db.SaveChangesAsync();
+
+        Navigation.NavigateTo("/my-bookings");
+    }
+
+    private sealed class BookingInput
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string CustomerName { get; set; } = "";
+
+        public DateOnly CheckIn { get; set; }
+
+        public DateOnly CheckOut { get; set; }
+    }
+}
