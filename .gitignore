@@ -1,12 +1,5 @@
-**/bin/
-**/obj/
+bin/
+obj/
 .vs/
 .vscode/
 *.user
-*.suo
-*.db
-*.db-shm
-*.db-wal
-*.sqlite
-*.sqlite3
-TestResults/
