@@ -1,21 +1,24 @@
 # StayEase — Hotel Booking System
 
-Starter solution for .NET 8 / Blazor Web App.
+Starter implementation using .NET 8 Blazor Server, Clean Architecture, EF Core 8 and SQLite.
 
-## Projects
-- `StayEase.Web` — Blazor user interface
-- `StayEase.Domain` — core entities and enums
-- `StayEase.Application` — application contracts and services
-- `StayEase.Infrastructure` — data-access implementation (to be added)
-- `StayEase.Tests` — automated tests (to be added)
+## Requirements
+- .NET 8 SDK
 
 ## Run
 ```bash
 dotnet restore
-dotnet build StayEase.sln
-dotnet run --project StayEase.Web
+dotnet run --project src/StayEase.Web
+```
+Open the local URL printed in the terminal. The SQLite database is created and seeded on first run.
+
+## Test
+```bash
+dotnet test
 ```
 
-Open the local HTTPS/HTTP URL printed by the terminal.
-
-Payment is intended to be simulated for this student project. Do not enter real card details.
+## Notes
+- This is a self-contained starter project based on the entity/property assumptions from the conversation.
+- Demo user identity is currently represented by `CustomerId = 1`; replace it with ASP.NET Core Identity before production.
+- Admin pages are not protected by authentication/authorization yet.
+- Availability is checked in application code; production booking requires transactional/concurrency protection.
