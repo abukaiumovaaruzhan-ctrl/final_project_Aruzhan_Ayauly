@@ -4,15 +4,7 @@ A hotel booking web application built with **C# (.NET 8)** and **ASP.NET Core**,
 
 This project was created for the *Introduction to Functional Programming* course. The business logic is written in a functional style: immutable data, pure functions and no hidden side effects in the domain rules.
 
-## Features
 
-- Browse hotels and search by hotel name or city
-- View hotel details, room types, prices and capacity
-- Book a room by choosing check-in and check-out dates
-- Automatic price calculation: price per night × nights, with a **10% discount for stays of 7 nights or more**
-- Protection against double booking (overlapping dates for the same room)
-- "My bookings" page with the ability to cancel a booking
-- Admin dashboard: revenue and statistics, add/delete hotels and rooms, change booking status
 
 ## Tech Stack
 
