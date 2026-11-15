@@ -1,9 +1,12 @@
-bin/
-obj/
+**/bin/
+**/obj/
 .vs/
 .vscode/
 *.user
 *.suo
-.DS_Store
-.env
-appsettings.Local.json
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+TestResults/
