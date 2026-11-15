@@ -1,3 +1,4 @@
+using Xunit;
 using StayEase.Domain;
 
 namespace StayEase.Tests;
