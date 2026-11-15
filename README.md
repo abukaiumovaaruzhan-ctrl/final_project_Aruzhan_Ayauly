@@ -25,7 +25,6 @@ This project was created for the *Introduction to Functional Programming* course
 ### Run the application
 
 ```bash
-git@github.com:abukaiumovaaruzhan-ctrl/final_project_Aruzhan_Ayauly.git
 dotnet run --project StayEase
 ```
 
