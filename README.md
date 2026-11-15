@@ -8,7 +8,7 @@ Starter implementation using .NET 8 Blazor Server, Clean Architecture, EF Core 8
 ## Run
 ```bash
 dotnet restore
-dotnet run --project src/StayEase.Web
+dotnet run --project StayEase
 ```
 Open the local URL printed in the terminal. The SQLite database is created and seeded on first run.
 
