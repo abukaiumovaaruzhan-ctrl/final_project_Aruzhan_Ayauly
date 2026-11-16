@@ -1,0 +1,86 @@
+@page "/my-bookings"
+@attribute [Authorize]
+@inject BookingService Bookings
+@inject UserContext Users
+@inject ToastService Toast
+
+<PageTitle>My bookings — StayEase</PageTitle>
+
+<div class="wrap page">
+    <h1>My bookings</h1>
+
+    @if (_items is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (_items.Count == 0)
+    {
+        <p>No bookings yet. <a href="">Browse hotels</a></p>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>Hotel</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Nights</th><th>Guests</th><th>Total</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in _items)
+                    {
+                        <tr>
+                            <td>@b.Room.Hotel.Name</td>
+                            <td>@b.Room.RoomType @b.Room.Number</td>
+                            <td>@Fmt.Date(b.CheckIn)</td>
+                            <td>@Fmt.Date(b.CheckOut)</td>
+                            <td>@Pricing.Nights(b.CheckIn, b.CheckOut)</td>
+                            <td>@b.Guests</td>
+                            <td>@Fmt.Money(b.TotalPrice)</td>
+                            <td><span class="badge @b.Status">@b.Status</span></td>
+                            <td>
+                                @if (b.Status != BookingStatus.Cancelled)
+                                {
+                                    <button class="btn-link" @onclick="() => _cancelId = b.Id">Cancel</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<ConfirmDialog Show="_cancelId is not null"
+               Title="Cancel booking?"
+               Message="@($"Booking #{_cancelId} will be cancelled. This cannot be undone.")"
+               ConfirmText="Yes, cancel" CancelText="Keep it"
+               OnConfirm="DoCancel" OnCancel="() => _cancelId = null" />
+
+@code {
+    private List<Booking>? _items;
+    private CurrentUser? _user;
+    private int? _cancelId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _user = await Users.GetAsync();
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        if (_user is not null) _items = await Bookings.GetMineAsync(_user);
+    }
+
+    private async Task DoCancel()
+    {
+        var id = _cancelId;
+        _cancelId = null;
+        if (id is null || _user is null) return;
+
+        var result = await Bookings.CancelAsync(_user, id.Value);
+        if (result.IsSuccess) Toast.Success("Booking cancelled.");
+        else Toast.Error(result.Error!);
+        await Load();
+    }
+}

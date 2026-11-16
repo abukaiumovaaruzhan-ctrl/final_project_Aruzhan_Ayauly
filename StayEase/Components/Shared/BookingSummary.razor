@@ -1,0 +1,35 @@
+@implements IDisposable
+@inject BookingState State
+
+@{
+    var b = State.Breakdown;
+}
+<div class="card summary">
+    <h3>Booking Summary</h3>
+    @if (State.Room is null || b is null || State.CheckIn is not { } checkIn || State.CheckOut is not { } checkOut)
+    {
+        <p class="muted">Select a room and dates to see the total.</p>
+    }
+    else
+    {
+        <dl>
+            <dt>Room</dt><dd>@State.Room.RoomType · @State.Room.Number</dd>
+            <dt>Check-in</dt><dd><b>@Fmt.Date(checkIn)</b></dd>
+            <dt>Check-out</dt><dd><b>@Fmt.Date(checkOut)</b></dd>
+            <dt>Nights</dt><dd><b>@b.Nights</b></dd>
+            <dt>Room price</dt><dd><b>@Fmt.Money(b.PricePerNight) / night</b></dd>
+            <dt>Subtotal</dt><dd>@Fmt.Money(b.Subtotal)</dd>
+            @if (b.Discount > 0)
+            {
+                <dt>Discount 10%</dt><dd class="discount">-@Fmt.Money(b.Discount)</dd>
+            }
+        </dl>
+        <div class="total-row"><span>Total</span><span class="total">@Fmt.Money(b.Total)</span></div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized() => State.OnChange += Changed;
+    private void Changed() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => State.OnChange -= Changed;
+}

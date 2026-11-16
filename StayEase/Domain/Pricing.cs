@@ -1,31 +1,29 @@
 namespace StayEase.Domain;
 
-/// <summary>
-/// Чистые функции: результат зависит только от аргументов, побочных эффектов нет.
-/// </summary>
+public record PriceBreakdown(int Nights, decimal PricePerNight, decimal Subtotal, decimal Discount, decimal Total);
+
+/// <summary>Чистые функции: результат зависит только от аргументов, без побочных эффектов.</summary>
 public static class Pricing
 {
     public const int WeeklyDiscountFromNights = 7;
-    public const decimal WeeklyDiscountFactor = 0.9m;
+    public const decimal WeeklyDiscountRate = 0.10m;
 
-    public static int Nights(DateOnly checkIn, DateOnly checkOut) =>
-        checkOut.DayNumber - checkIn.DayNumber;
+    public static int Nights(DateOnly checkIn, DateOnly checkOut) => checkOut.DayNumber - checkIn.DayNumber;
 
-    /// <summary>Цена × ночи, скидка 10% от 7 ночей.</summary>
-    public static decimal CalculatePrice(decimal pricePerNight, DateOnly checkIn, DateOnly checkOut)
+    public static PriceBreakdown Breakdown(decimal pricePerNight, DateOnly checkIn, DateOnly checkOut)
     {
         var nights = Nights(checkIn, checkOut);
         if (nights <= 0)
             throw new DomainException("Check-out must be after check-in.");
 
-        var total = pricePerNight * nights;
-        if (nights >= WeeklyDiscountFromNights)
-            total *= WeeklyDiscountFactor;
-
-        return Math.Round(total, 2);
+        var subtotal = pricePerNight * nights;
+        var discount = nights >= WeeklyDiscountFromNights ? Math.Round(subtotal * WeeklyDiscountRate, 2) : 0m;
+        return new PriceBreakdown(nights, pricePerNight, subtotal, discount, subtotal - discount);
     }
 
-    /// <summary>Пересекаются ли два периода проживания (день выезда свободен).</summary>
-    public static bool Overlaps(DateOnly aIn, DateOnly aOut, DateOnly bIn, DateOnly bOut) =>
-        aIn < bOut && bIn < aOut;
+    public static decimal CalculatePrice(decimal pricePerNight, DateOnly checkIn, DateOnly checkOut) =>
+        Breakdown(pricePerNight, checkIn, checkOut).Total;
+
+    /// <summary>Пересекаются ли периоды (день выезда одного гостя свободен для следующего).</summary>
+    public static bool Overlaps(DateOnly aIn, DateOnly aOut, DateOnly bIn, DateOnly bOut) => aIn < bOut && bIn < aOut;
 }

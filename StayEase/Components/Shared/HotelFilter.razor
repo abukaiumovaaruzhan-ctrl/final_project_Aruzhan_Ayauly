@@ -1,0 +1,43 @@
+<div class="card filter">
+    <label>Min price (₸)
+        <input class="field" type="number" min="0" step="1000" value="@Criteria.MinPrice" @onchange="SetMin" />
+    </label>
+    <label>Max price (₸)
+        <input class="field" type="number" min="0" step="1000" value="@Criteria.MaxPrice" @onchange="SetMax" />
+    </label>
+    <label>Stars
+        <select class="field" @onchange="SetStars">
+            @foreach (var s in new[] { 0, 3, 4, 5 })
+            {
+                <option value="@s" selected="@(Criteria.MinStars == s)">@(s == 0 ? "Any" : $"{s}+ ★")</option>
+            }
+        </select>
+    </label>
+    <label>Rating
+        <select class="field" @onchange="SetRating">
+            @foreach (var r in new[] { 0, 7, 8, 9 })
+            {
+                <option value="@r" selected="@((int)Criteria.MinRating == r)">@(r == 0 ? "Any" : $"{r}+")</option>
+            }
+        </select>
+    </label>
+    <button class="btn-ghost" @onclick="Reset">Reset</button>
+</div>
+
+@code {
+    [Parameter] public HotelFilterCriteria Criteria { get; set; } = new();
+    [Parameter] public EventCallback<HotelFilterCriteria> CriteriaChanged { get; set; }
+
+    private Task Update(HotelFilterCriteria c) => CriteriaChanged.InvokeAsync(c);
+
+    private static decimal? Dec(object? v) =>
+        decimal.TryParse(v?.ToString(), NumberStyles.Number, CultureInfo.InvariantCulture, out var d) ? d : null;
+
+    private Task SetMin(ChangeEventArgs e) => Update(Criteria with { MinPrice = Dec(e.Value) });
+    private Task SetMax(ChangeEventArgs e) => Update(Criteria with { MaxPrice = Dec(e.Value) });
+    private Task SetStars(ChangeEventArgs e) =>
+        Update(Criteria with { MinStars = int.TryParse(e.Value?.ToString(), out var s) ? s : 0 });
+    private Task SetRating(ChangeEventArgs e) =>
+        Update(Criteria with { MinRating = double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var r) ? r : 0 });
+    private Task Reset() => Update(new HotelFilterCriteria());
+}

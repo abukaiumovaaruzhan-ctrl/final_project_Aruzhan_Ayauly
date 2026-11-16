@@ -1,0 +1,88 @@
+@implements IDisposable
+@inject BookingState State
+@inject BookingService Bookings
+@inject UserContext Users
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<div class="card book">
+    <h3>Book your stay</h3>
+    <AuthorizeView>
+        <NotAuthorized>
+            <p class="muted">Please <a href="login">log in</a> or <a href="register">register</a> to book a room.</p>
+        </NotAuthorized>
+        <Authorized>
+            <label>Check-in
+                <input type="date" class="field" min="@Iso(Bookings.Today)" value="@Iso(State.CheckIn)" @onchange="OnCheckIn" />
+            </label>
+            <label>Check-out
+                <input type="date" class="field" min="@Iso(State.CheckIn ?? Bookings.Today)" value="@Iso(State.CheckOut)" @onchange="OnCheckOut" />
+            </label>
+            <label>Guests
+                <input type="number" class="field" min="1" max="@(State.Room?.Capacity ?? 10)" value="@State.Guests" @onchange="OnGuests" />
+            </label>
+            @if (_error is not null)
+            {
+                <p class="error">@_error</p>
+            }
+            <button class="btn" disabled="@_busy" @onclick="Submit">@(_busy ? "Booking…" : "Confirm booking")</button>
+        </Authorized>
+    </AuthorizeView>
+</div>
+
+@if (_confirmed is not null)
+{
+    <div class="card confirm">
+        <h3>✔ Booking created</h3>
+        <p>Booking <b>#@_confirmed.Id</b> for <b>@State.Hotel?.Name</b> is <b>@_confirmed.Status</b>.</p>
+        <p>@Fmt.Date(_confirmed.CheckIn) → @Fmt.Date(_confirmed.CheckOut) · @Fmt.Money(_confirmed.TotalPrice)</p>
+        <a class="btn" href="my-bookings">View my bookings</a>
+    </div>
+}
+
+@code {
+    private string? _error;
+    private bool _busy;
+    private Booking? _confirmed;
+
+    protected override void OnInitialized() => State.OnChange += Changed;
+    private void Changed() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => State.OnChange -= Changed;
+
+    private static string Iso(DateOnly? d) => d?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "";
+    private static DateOnly? Parse(object? v) =>
+        DateOnly.TryParse(v?.ToString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : null;
+
+    private void OnCheckIn(ChangeEventArgs e) { _confirmed = null; State.SetDates(Parse(e.Value), State.CheckOut); }
+    private void OnCheckOut(ChangeEventArgs e) { _confirmed = null; State.SetDates(State.CheckIn, Parse(e.Value)); }
+    private void OnGuests(ChangeEventArgs e) =>
+        State.SetGuests(int.TryParse(e.Value?.ToString(), out var g) ? g : 1);
+
+    private async Task Submit()
+    {
+        _error = null;
+        var user = await Users.GetAsync();
+        if (user is null) { Nav.NavigateTo("login", forceLoad: true); return; }
+        if (State.Room is null) { _error = "Choose a room."; return; }
+        if (State.CheckIn is not { } checkIn || State.CheckOut is not { } checkOut)
+        {
+            _error = "Pick check-in and check-out dates.";
+            return;
+        }
+
+        _busy = true;
+        var result = await Bookings.CreateAsync(user, State.Room.Id, checkIn, checkOut, State.Guests);
+        _busy = false;
+
+        if (!result.IsSuccess)
+        {
+            _error = result.Error;
+            Toast.Error(result.Error!);
+            return;
+        }
+
+        _confirmed = result.Value;
+        Toast.Success($"Booking #{result.Value!.Id} created!");
+        State.MarkBooked();
+    }
+}

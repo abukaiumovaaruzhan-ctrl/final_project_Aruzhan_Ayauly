@@ -1,0 +1,25 @@
+<header>
+    <div class="wrap bar">
+        <a href="" class="logo">Stay<span>Ease</span></a>
+        <nav>
+            <NavLink href="" Match="NavLinkMatch.All">Hotels</NavLink>
+            <AuthorizeView>
+                <Authorized>
+                    <NavLink href="my-bookings">My bookings</NavLink>
+                    @if (context.User.IsInRole("Admin"))
+                    {
+                        <NavLink href="admin">Admin</NavLink>
+                    }
+                    <span class="muted hello">@context.User.Identity?.Name</span>
+                    <form method="post" action="/auth/logout" class="inline">
+                        <button class="btn-ghost">Log out</button>
+                    </form>
+                </Authorized>
+                <NotAuthorized>
+                    <NavLink href="login">Log in</NavLink>
+                    <NavLink href="register" class="btn btn-sm">Sign up</NavLink>
+                </NotAuthorized>
+            </AuthorizeView>
+        </nav>
+    </div>
+</header>

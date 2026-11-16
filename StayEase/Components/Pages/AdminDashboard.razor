@@ -1,0 +1,265 @@
+@page "/admin"
+@attribute [Authorize(Roles = "Admin")]
+@implements IDisposable
+@inject HotelService Hotels
+@inject BookingService Bookings
+@inject StatsService Stats
+@inject UserContext Users
+@inject ToastService Toast
+@inject BookingNotifier Notifier
+
+<PageTitle>Admin dashboard — StayEase</PageTitle>
+
+<div class="wrap page">
+    <h1>Admin dashboard</h1>
+
+    @if (_stats is not null)
+    {
+        <div class="grid kpis">
+            <div class="card kpi"><span class="muted">Revenue</span><b>@Fmt.Money(_stats.Revenue)</b></div>
+            <div class="card kpi"><span class="muted">Bookings</span><b>@_stats.TotalBookings</b></div>
+            <div class="card kpi"><span class="muted">Hotels</span><b>@_stats.Hotels</b></div>
+            <div class="card kpi"><span class="muted">Rooms</span><b>@_stats.Rooms</b></div>
+        </div>
+        <div class="grid charts">
+            <BarChart Title="Revenue by hotel" Items="_stats.RevenueByHotel" Kind="money" />
+            <BarChart Title="Occupancy, next 30 days" Items="_stats.Occupancy" Kind="percent" />
+            <BarChart Title="Popular hotels (bookings)" Items="_stats.PopularHotels" />
+            <BarChart Title="Bookings by status" Items="_stats.BookingsByStatus" />
+        </div>
+    }
+
+    <section>
+        <h2>@(_editId is null ? "Add hotel" : $"Edit hotel #{_editId}")</h2>
+        <div class="form f4">
+            <input class="field" placeholder="Name" @bind="_hotel.Name" />
+            <input class="field" placeholder="City" @bind="_hotel.City" />
+            <input class="field" placeholder="Address" @bind="_hotel.Address" />
+            <input class="field" placeholder="Image URL (optional)" @bind="_hotel.ImageUrl" />
+            <input class="field" type="number" min="1" max="5" title="Stars" @bind="_hotel.Stars" />
+            <input class="field" type="number" min="0" max="10" step="0.1" title="Rating" @bind="_hotel.Rating" />
+            <input class="field span2" placeholder="Description" @bind="_hotel.Description" />
+        </div>
+        <div class="actions-row">
+            <button class="btn" @onclick="SaveHotel">@(_editId is null ? "Add hotel" : "Save changes")</button>
+            @if (_editId is not null)
+            {
+                <button class="btn-ghost" @onclick="CancelEdit">Cancel edit</button>
+            }
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Name</th><th>City</th><th>Stars</th><th>Rating</th><th>Rooms</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var h in _hotels)
+                    {
+                        <tr>
+                            <td>@h.Name</td><td>@h.City</td><td>@h.Stars</td>
+                            <td>@h.Rating.ToString("0.0", CultureInfo.InvariantCulture)</td><td>@h.Rooms.Count</td>
+                            <td class="nowrap">
+                                <button class="btn-link plain" @onclick="() => Edit(h)">Edit</button>
+                                <button class="btn-link" @onclick='() => _pending = ("hotel", h.Id)'>Delete</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section>
+        <h2>Rooms</h2>
+        <div class="form f5">
+            <select class="field" @bind="_room.HotelId">
+                <option value="0">Hotel…</option>
+                @foreach (var h in _hotels)
+                {
+                    <option value="@h.Id">@h.Name</option>
+                }
+            </select>
+            <input class="field" placeholder="Number" @bind="_room.Number" />
+            <select class="field" @bind="_room.RoomType">
+                @foreach (var t in Enum.GetValues<RoomType>())
+                {
+                    <option value="@t">@t</option>
+                }
+            </select>
+            <input class="field" type="number" min="1" title="Price per night" @bind="_room.Price" />
+            <input class="field" type="number" min="1" title="Capacity" @bind="_room.Capacity" />
+        </div>
+        <div class="actions-row"><button class="btn" @onclick="AddRoom">Add room</button></div>
+
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Hotel</th><th>Room</th><th>Type</th><th>Price</th><th>Guests</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var h in _hotels)
+                    {
+                        foreach (var r in h.Rooms)
+                        {
+                            <tr>
+                                <td>@h.Name</td><td>@r.Number</td><td>@r.RoomType</td>
+                                <td>@Fmt.Money(r.Price)</td><td>@r.Capacity</td>
+                                <td><button class="btn-link" @onclick='() => _pending = ("room", r.Id)'>Delete</button></td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section>
+        <h2>All bookings</h2>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>#</th><th>Customer</th><th>Hotel · Room</th><th>Dates</th><th>Total</th><th>Status</th><th>Change</th></tr></thead>
+                <tbody>
+                    @foreach (var b in _bookings)
+                    {
+                        <tr>
+                            <td>@b.Id</td>
+                            <td>@b.User.Name</td>
+                            <td>@b.Room.Hotel.Name · @b.Room.Number</td>
+                            <td>@Fmt.Date(b.CheckIn) → @Fmt.Date(b.CheckOut)</td>
+                            <td>@Fmt.Money(b.TotalPrice)</td>
+                            <td><span class="badge @b.Status">@b.Status</span></td>
+                            <td>
+                                <select class="field" @onchange="@(e => ChangeStatus(b.Id, e.Value?.ToString()))">
+                                    @foreach (var s in Enum.GetValues<BookingStatus>())
+                                    {
+                                        <option value="@s" selected="@(s == b.Status)">@s</option>
+                                    }
+                                </select>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<ConfirmDialog Show="_pending is not null"
+        Title="@($"Delete {_pending?.Kind}?")"  
+         Message="This action cannot be undone."
+               ConfirmText="Delete" CancelText="Cancel"
+               OnConfirm="ConfirmPending" OnCancel="() => _pending = null" />
+
+@code {
+    private sealed class HotelForm
+    {
+        public string Name { get; set; } = "";
+        public string City { get; set; } = "";
+        public string Address { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string ImageUrl { get; set; } = "";
+        public int Stars { get; set; } = 4;
+        public double Rating { get; set; } = 8.0;
+    }
+
+    private sealed class RoomForm
+    {
+        public int HotelId { get; set; }
+        public string Number { get; set; } = "";
+        public RoomType RoomType { get; set; } = RoomType.Standard;
+        public decimal Price { get; set; } = 40000;
+        public int Capacity { get; set; } = 2;
+    }
+
+    private CurrentUser? _user;
+    private DashboardStats? _stats;
+    private List<Hotel> _hotels = [];
+    private List<Booking> _bookings = [];
+    private HotelForm _hotel = new();
+    private RoomForm _room = new();
+    private int? _editId;
+    private (string Kind, int Id)? _pending;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _user = await Users.GetAsync();
+        Notifier.OnEvent += OnEvent; // живые обновления при новых бронированиях
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        if (_user is null) return;
+        _hotels = await Hotels.GetAllAsync();
+        _bookings = await Bookings.GetAllAsync(_user);
+        var stats = await Stats.GetAsync(_user);
+        if (stats.IsSuccess) _stats = stats.Value;
+    }
+
+    private void OnEvent(BookingEvent e) => _ = InvokeAsync(async () =>
+    {
+        try { await Load(); StateHasChanged(); } catch (ObjectDisposedException) { }
+    });
+
+    private void Report(Result result, string okMessage)
+    {
+        if (result.IsSuccess) Toast.Success(okMessage);
+        else Toast.Error(result.Error!);
+    }
+
+    private void Edit(Hotel h)
+    {
+        _editId = h.Id;
+        _hotel = new HotelForm
+        {
+            Name = h.Name, City = h.City, Address = h.Address, Description = h.Description,
+            ImageUrl = h.ImageUrl, Stars = h.Stars, Rating = h.Rating,
+        };
+    }
+
+    private void CancelEdit() { _editId = null; _hotel = new HotelForm(); }
+
+    private async Task SaveHotel()
+    {
+        if (_user is null) return;
+        var input = new HotelInput(_hotel.Name, _hotel.City, _hotel.Address, _hotel.Description,
+            _hotel.Stars, _hotel.Rating, _hotel.ImageUrl);
+
+        var result = _editId is { } id
+            ? await Hotels.UpdateAsync(_user, id, input)
+            : await Hotels.AddAsync(_user, input);
+
+        Report(result.ToResult(), _editId is null ? "Hotel added." : "Hotel updated.");
+        if (result.IsSuccess) CancelEdit();
+        await Load();
+    }
+
+    private async Task AddRoom()
+    {
+        if (_user is null) return;
+        var result = await Hotels.AddRoomAsync(_user,
+            new RoomInput(_room.HotelId, _room.Number, _room.RoomType, _room.Price, _room.Capacity));
+        Report(result.ToResult(), "Room added.");
+        if (result.IsSuccess) _room = new RoomForm { HotelId = _room.HotelId };
+        await Load();
+    }
+
+    private async Task ConfirmPending()
+    {
+        if (_pending is not { } p || _user is null) return;
+        _pending = null;
+
+        var result = p.Kind == "hotel"
+            ? await Hotels.DeleteAsync(_user, p.Id)
+            : await Hotels.DeleteRoomAsync(_user, p.Id);
+
+        Report(result, p.Kind == "hotel" ? "Hotel deleted." : "Room deleted.");
+        await Load();
+    }
+
+    private async Task ChangeStatus(int id, string? value)
+    {
+        if (_user is null || !Enum.TryParse<BookingStatus>(value, out var status)) return;
+        Report(await Bookings.SetStatusAsync(_user, id, status), "Status updated.");
+        await Load();
+    }
+
+    public void Dispose() => Notifier.OnEvent -= OnEvent;
+}

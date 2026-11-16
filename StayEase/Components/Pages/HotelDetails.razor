@@ -1,0 +1,69 @@
+@page "/hotels/{Id:int}"
+@implements IDisposable
+@inject HotelService Hotels
+@inject BookingState State
+
+<PageTitle>@(_hotel?.Name ?? "Hotel") — StayEase</PageTitle>
+
+@if (_loading)
+{
+    <p class="muted pad wrap">Loading…</p>
+}
+else if (_hotel is null)
+{
+    <div class="wrap narrow"><div class="card auth"><h1>Hotel not found</h1><a class="btn" href="">Back to hotels</a></div></div>
+}
+else
+{
+    <img class="details-img" src="@_hotel.ImageUrl" alt="@_hotel.Name" />
+    <div class="wrap details">
+        <div>
+            <h1>@_hotel.Name</h1>
+            <p class="muted">@_hotel.City · @_hotel.Address · <span class="stars">@(new string('★', _hotel.Stars))</span> · Rating @_hotel.Rating.ToString("0.0", CultureInfo.InvariantCulture)/10</p>
+            <p>@_hotel.Description</p>
+
+            <h2>Rooms</h2>
+            <div class="rooms">
+                @foreach (var room in _hotel.Rooms)
+                {
+                    <button class="room @(State.Room?.Id == room.Id ? "selected" : "")" @onclick="() => State.SelectRoom(room)">
+                        <b>@room.RoomType · Room @room.Number</b>
+                        <span class="muted">Up to @room.Capacity guests</span>
+                        <span><b>@Fmt.Money(room.Price)</b>/night</span>
+                    </button>
+                }
+                @if (_hotel.Rooms.Count == 0)
+                {
+                    <p class="muted">No rooms yet.</p>
+                }
+            </div>
+
+            <h2>Availability</h2>
+            <AvailabilityCalendar />
+        </div>
+        <aside class="side">
+            <BookingForm />
+            <BookingSummary />
+        </aside>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Hotel? _hotel;
+    private bool _loading = true;
+
+    protected override void OnInitialized() => State.OnChange += Changed;
+    private void Changed() => _ = InvokeAsync(StateHasChanged);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _hotel = await Hotels.GetAsync(Id);
+        _loading = false;
+        if (_hotel is not null) State.SelectHotel(_hotel);
+    }
+
+    public void Dispose() => State.OnChange -= Changed;
+}

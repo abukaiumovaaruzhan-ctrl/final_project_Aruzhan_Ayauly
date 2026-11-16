@@ -1,0 +1,86 @@
+@implements IDisposable
+@inject BookingState State
+@inject BookingService Bookings
+
+<div class="card calendar">
+    <div class="cal-head">
+        <button class="btn-ghost" @onclick="Prev">‹</button>
+        <b>@_month.ToString("MMMM yyyy", CultureInfo.InvariantCulture)</b>
+        <button class="btn-ghost" @onclick="Next">›</button>
+    </div>
+
+    @if (State.Room is null)
+    {
+        <p class="muted">Select a room to see its availability.</p>
+    }
+    else
+    {
+        <p class="muted small">Room @State.Room.Number · @State.Room.RoomType</p>
+        <div class="cal-grid">
+            @foreach (var d in new[] { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" })
+            {
+                <span class="dow">@d</span>
+            }
+            @for (var i = 0; i < Offset; i++)
+            {
+                <span></span>
+            }
+            @for (var day = 1; day <= DateTime.DaysInMonth(_month.Year, _month.Month); day++)
+            {
+                var date = new DateOnly(_month.Year, _month.Month, day);
+                <span class="@DayClass(date)" title="@DayTitle(date)">@day</span>
+            }
+        </div>
+        <div class="legend">
+            <span><i class="dot free"></i> Free</span>
+            <span><i class="dot booked"></i> Booked</span>
+            <span><i class="dot selected"></i> Your dates</span>
+        </div>
+    }
+</div>
+
+@code {
+    private DateOnly _month;
+    private int? _loadedRoom;
+    private int _loadedVersion = -1;
+    private List<(DateOnly Start, DateOnly End)> _occupied = [];
+
+    private int Offset => ((int)new DateOnly(_month.Year, _month.Month, 1).DayOfWeek + 6) % 7;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _month = new DateOnly(Bookings.Today.Year, Bookings.Today.Month, 1);
+        State.OnChange += Changed;
+        await Reload();
+    }
+
+    private void Changed() => _ = InvokeAsync(async () =>
+    {
+        try { await Reload(); StateHasChanged(); } catch (ObjectDisposedException) { }
+    });
+
+    private async Task Reload()
+    {
+        if (State.Room is null) { _occupied = []; _loadedRoom = null; return; }
+        if (_loadedRoom == State.Room.Id && _loadedVersion == State.BookingsVersion) return;
+        _loadedRoom = State.Room.Id;
+        _loadedVersion = State.BookingsVersion;
+        _occupied = await Bookings.GetOccupiedAsync(State.Room.Id);
+    }
+
+    private void Prev() => _month = _month.AddMonths(-1);
+    private void Next() => _month = _month.AddMonths(1);
+
+    private bool IsBooked(DateOnly d) => _occupied.Any(o => d >= o.Start && d < o.End);
+    private bool IsSelected(DateOnly d) => State.CheckIn is { } a && State.CheckOut is { } b && d >= a && d < b;
+
+    private string DayClass(DateOnly d) =>
+        d < Bookings.Today ? "day past" :
+        IsBooked(d) ? "day booked" :
+        IsSelected(d) ? "day selected" : "day free";
+
+    private string DayTitle(DateOnly d) =>
+        d < Bookings.Today ? "Past" : IsBooked(d) ? "Booked" : "Available";
+
+    public void Dispose() => State.OnChange -= Changed;
+}

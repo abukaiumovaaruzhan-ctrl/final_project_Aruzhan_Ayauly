@@ -1,0 +1,37 @@
+<div class="card chart">
+    <h3>@Title</h3>
+    @if (Items.Count == 0)
+    {
+        <p class="muted">No data yet.</p>
+    }
+    else
+    {
+        foreach (var item in Items)
+        {
+            <div class="bar-row">
+                <span class="bar-label" title="@item.Label">@item.Label</span>
+                <div class="bar"><div class="bar-fill" style="width:@Pct(item.Value)%"></div></div>
+                <span class="bar-val">@Display(item.Value)</span>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public IReadOnlyList<LabeledValue> Items { get; set; } = [];
+    /// <summary>"money", "percent" или "number".</summary>
+    [Parameter] public string Kind { get; set; } = "number";
+
+    private decimal Max => Items.Count == 0 ? 1 : Math.Max(Items.Max(i => i.Value), 1);
+
+    private string Pct(decimal v) =>
+        Math.Min(100, v / Max * 100).ToString("0.#", CultureInfo.InvariantCulture);
+
+    private string Display(decimal v) => Kind switch
+    {
+        "money" => Fmt.Money(v),
+        "percent" => v.ToString("0.#", CultureInfo.InvariantCulture) + "%",
+        _ => v.ToString("0", CultureInfo.InvariantCulture),
+    };
+}

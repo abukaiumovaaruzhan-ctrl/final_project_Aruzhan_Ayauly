@@ -1,0 +1,33 @@
+@page "/register"
+
+<PageTitle>Register — StayEase</PageTitle>
+
+<div class="wrap narrow">
+    <div class="card auth">
+        <h1>Create account</h1>
+        @if (!string.IsNullOrEmpty(Error))
+        {
+            <p class="error">@Error</p>
+        }
+        <form method="post" action="/auth/register">
+            <label>Name
+                <input class="field" type="text" name="name" required minlength="2" autocomplete="name" />
+            </label>
+            <label>Email
+                <input class="field" type="email" name="email" required autocomplete="email" />
+            </label>
+            <label>Password (min. 6 characters)
+                <input class="field" type="password" name="password" required minlength="6" autocomplete="new-password" />
+            </label>
+            <label>Confirm password
+                <input class="field" type="password" name="confirm" required minlength="6" autocomplete="new-password" />
+            </label>
+            <button class="btn">Sign up</button>
+        </form>
+        <p class="muted">Already registered? <a href="login">Log in</a></p>
+    </div>
+</div>
+
+@code {
+    [Parameter, SupplyParameterFromQuery] public string? Error { get; set; }
+}

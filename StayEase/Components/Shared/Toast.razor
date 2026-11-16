@@ -1,0 +1,56 @@
+@implements IDisposable
+@inject ToastService Toasts
+@inject BookingNotifier Notifier
+@inject UserContext Users
+
+<div class="toasts" aria-live="polite">
+    @foreach (var t in _items)
+    {
+        <div class="toast @t.Kind.ToString().ToLower()">@t.Text</div>
+    }
+</div>
+
+@code {
+    private readonly List<ToastMessage> _items = [];
+    private CurrentUser? _user;
+    private bool _disposed;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Toasts.OnShow += Add;
+        Notifier.OnEvent += OnBookingEvent;
+        _user = await Users.GetAsync();
+    }
+
+    private void Add(ToastMessage message)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                _items.Add(message);
+                StateHasChanged();
+                await Task.Delay(3500);
+                if (_disposed) return;
+                _items.Remove(message);
+                StateHasChanged();
+            }
+            catch (ObjectDisposedException) { }
+        });
+    }
+
+    // Админ видит все события, клиент — только по своим бронированиям (если сделал их не он сам).
+    private void OnBookingEvent(BookingEvent e)
+    {
+        if (_user is null || e.ActorId == _user.Id) return;
+        if (!_user.IsAdmin && e.OwnerUserId != _user.Id) return;
+        Add(new ToastMessage(Guid.NewGuid(), e.Message, ToastKind.Info));
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        Toasts.OnShow -= Add;
+        Notifier.OnEvent -= OnBookingEvent;
+    }
+}

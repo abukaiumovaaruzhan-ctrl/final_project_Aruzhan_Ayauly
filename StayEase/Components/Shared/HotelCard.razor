@@ -1,0 +1,26 @@
+<article class="card hotel-card">
+    <img src="@Hotel.ImageUrl" alt="@Hotel.Name" loading="lazy" />
+    <div class="body">
+        <div class="row">
+            <h3>@Hotel.Name</h3>
+            <span class="stars">@(new string('★', Hotel.Stars))</span>
+        </div>
+        <p class="muted">@Hotel.City · Rating @Hotel.Rating.ToString("0.0", CultureInfo.InvariantCulture)/10</p>
+        <p class="desc">@Hotel.Description</p>
+        <div class="bottom">
+            @if (HotelQuery.FromPrice(Hotel) is { } price)
+            {
+                <span>from <b>@Fmt.Money(price)</b>/night</span>
+            }
+            else
+            {
+                <span class="muted">No rooms yet</span>
+            }
+            <a class="btn" href="hotels/@Hotel.Id">View details</a>
+        </div>
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public Hotel Hotel { get; set; } = null!;
+}

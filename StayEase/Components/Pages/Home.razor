@@ -1,0 +1,43 @@
+@page "/"
+@inject HotelService Hotels
+
+<PageTitle>StayEase — Book hotels with ease</PageTitle>
+
+<section class="hero">
+    <img src="hero.jpg" alt="Hotel terrace at sunset" />
+    <div class="wrap">
+        <h1>Find your next stay.</h1>
+        <HotelSearch @bind-Value="_query" />
+    </div>
+</section>
+
+<div class="wrap">
+    <HotelFilter @bind-Criteria="_criteria" />
+
+    @if (_all is null)
+    {
+        <p class="muted pad">Loading hotels…</p>
+    }
+    else
+    {
+        var visible = HotelQuery.Apply(_all, _query, _criteria).ToList();
+        <div class="grid hotels">
+            @foreach (var hotel in visible)
+            {
+                <HotelCard Hotel="hotel" />
+            }
+            @if (visible.Count == 0)
+            {
+                <p class="muted">No hotels match your search.</p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Hotel>? _all;
+    private string _query = "";
+    private HotelFilterCriteria _criteria = new();
+
+    protected override async Task OnInitializedAsync() => _all = await Hotels.GetAllAsync();
+}
