@@ -146,8 +146,8 @@ erDiagram
 **Prerequisites:** [.NET 8 SDK](https://dotnet.microsoft.com/download) and internet access for the first `restore` (NuGet packages).
 
 ```bash
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
+(https://github.com/abukaiumovaaruzhan-ctrl/final_project_Aruzhan_Ayauly.git)
+cd <https://github.com/abukaiumovaaruzhan-ctrl/final_project_Aruzhan_Ayauly.git>
 dotnet restore
 dotnet run --project StayEase
 ```
